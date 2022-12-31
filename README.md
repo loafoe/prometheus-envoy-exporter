@@ -1,12 +1,16 @@
 # prometheus-envoy-exporter
 
-Prometheus exporter for (near) Realtime Enphase Envoy-S Metered readouts
+Prometheus exporter for (near) Realtime Enphase Envoy-S Metered local readouts
 
 ## Disclaimer
 
-This exporter is not endorsed or approved by Enphase.
+This exporter is not endorsed or approved by Enphase. Use at your own risk. 
 
-## Install
+## Compatibility
+
+The exporter is compatible with newer `D7.x` firmware versions only which uses long lived JWT and short lived sessionId based authentication. Support for older D5.x firmware is not available but should be trivial to add if there is a need.
+
+## Installation
 
 Using Go 1.19 or newer
 
@@ -22,6 +26,7 @@ go install github.com/loafoe/prometheus-envoy-exporter@latest
 |-------------|-------------|----------|---------|
 | `ENVOY_USERNAME` | Username for Enlighten cloud | Y | |
 | `ENVOY_PASSWORD` | Password fro Enlighten cloud | Y | |
+| `ENVOY_SERIAL`  | Serial number the gateway on your LAN | Y | | 
 | `ENVOY_LISTEN` | Listen port of the exporter | N | `0.0.0.0:8899` |
 | `ENVOY_ADDRESS` | Address of the Envoy-S gateway | N | `https://envoy.local` |
 
