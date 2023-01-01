@@ -67,28 +67,40 @@ func main() {
 	viper.SetDefault("address", "https://envoy.local")
 	viper.SetDefault("listen", "0.0.0.0:8899")
 	viper.SetDefault("debug", false)
+	viper.SetDefault("refresh", 20)
 
 	username := viper.GetString("username")
 	password := viper.GetString("password")
 	serial := viper.GetString("serial")
 	address := viper.GetString("address")
 	listenAddr := viper.GetString("listen")
+	jwt := viper.GetString("jwt")
 	debug := viper.GetBool("debug")
+	refresh := viper.GetInt("refresh")
 
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout)))
+
+	if serial == "" { // Discovery via mDNS
+		discover, err := envoy.Discover()
+		if err != nil {
+			fmt.Printf("Missing serial and failed discovery: %s\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Using discovered envoy at %s with serial %s\n", discover.IPV4, discover.Serial)
+		serial = discover.Serial
+		address = fmt.Sprintf("https://%s", discover.IPV4)
+	}
 
 	e, err := envoy.NewClient(username, password, serial,
 		envoy.WithGatewayAddress(address),
 		envoy.WithDebug(debug),
+		envoy.WithJWT(jwt),
 		envoy.WithNotification(&notification{serial: serial}))
 
 	if err != nil {
-		fmt.Printf("Quitting because of error opening envoy: %v", err)
+		fmt.Printf("Quitting because of error opening envoy: %v\n", err)
 		os.Exit(1)
 	}
-
-	// Start
-	//e.Start()
 
 	go func() {
 		for {
@@ -120,8 +132,7 @@ func main() {
 					inverterLastReportWatts.WithLabelValues(serial, inverter.SerialNumber).Set(float64(inverter.LastReportWatts))
 				}
 			}
-
-			time.Sleep(20 * time.Second)
+			time.Sleep(time.Duration(refresh) * time.Second)
 		}
 	}()
 
@@ -147,7 +158,7 @@ func (n *notification) JWTError(err error) {
 }
 
 func (n *notification) SessionRefreshed(s string) {
-	slog.Info("Session refreshed")
+	slog.Info("Session refreshed", "session", s)
 	sessionRefreshes.WithLabelValues(n.serial).Inc()
 }
 
