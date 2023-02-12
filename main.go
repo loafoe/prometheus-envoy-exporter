@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/spf13/viper"
@@ -54,11 +53,6 @@ func init() {
 	registry.MustRegister(sessionRefreshes)
 	registry.MustRegister(sessionUses)
 	registry.MustRegister(inverterLastReportWatts)
-}
-
-func floatValue(input string) (fVal float64) {
-	fVal, _ = strconv.ParseFloat(input, 64)
-	return
 }
 
 func main() {
