@@ -30,15 +30,15 @@ go install github.com/loafoe/prometheus-envoy-exporter@latest
 
 ### Configure environment
 
-| Environment      | Description                             | Required | Default               |
-|------------------|-----------------------------------------|----------|-----------------------|
-| `ENVOY_USERNAME` | Username for Enlighten cloud            | N        |                       |
-| `ENVOY_PASSWORD` | Password fro Enlighten cloud            | N        |                       |
-| `ENVOY_SERIAL`   | Serial number the gateway on your LAN   | N        |                       |
-| `ENVOY_LISTEN`   | Listen port of the exporter             | N        | `0.0.0.0:8899`        |
-| `ENVOY_ADDRESS`  | Address of the Envoy-S gateway          | N        | `https://envoy.local` |
-| `ENVOY_JWT`      | Long lived JWT token                    | N        |                       |
-| `ENVOY_REFRESH`  | Seconds to wait between refreshing data | N        | `20`                  |
+| Environment      | Description                              | Required | Default               |
+|------------------|------------------------------------------|----------|-----------------------|
+| `ENVOY_USERNAME` | Username for Enlighten cloud             | N        |                       |
+| `ENVOY_PASSWORD` | Password for Enlighten cloud             | N        |                       |
+| `ENVOY_SERIAL`   | Serial number of the gateway on your LAN | N        |                       |
+| `ENVOY_LISTEN`   | Listen port of the exporter              | N        | `0.0.0.0:8899`        |
+| `ENVOY_ADDRESS`  | Address of the Envoy-S gateway           | N        | `https://envoy.local` |
+| `ENVOY_JWT`      | Long lived JWT token                     | N        |                       |
+| `ENVOY_REFRESH`  | Seconds to wait between refreshing data  | N        | `20`                  |
 
 > When you set only a JWT be sure to refresh it at least once a year, otherwise set your Enlighten Cloud login credentials
 
