@@ -72,13 +72,16 @@ func main() {
 			slog.Info("Config file not found")
 		}
 	}
+
+	// Logger
+	programLevel := new(slog.LevelVar)
+	h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
+	slog.SetDefault(slog.New(h))
+
 	if viper.GetBool("debug") {
-		programLevel := new(slog.LevelVar)
-		h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
-		slog.SetDefault(slog.New(h))
 		programLevel.Set(slog.LevelDebug)
 	}
-	slog.Debug("AllSettings", viper.AllSettings())
+	slog.Debug("Settings", "AllSettings", viper.AllSettings())
 
 	username := viper.GetString("username")
 	password := viper.GetString("password")
@@ -104,7 +107,7 @@ func main() {
 		envoy.WithGatewayAddress(address),
 		envoy.WithDebug(debug),
 		envoy.WithJWT(jwt),
-		envoy.WithNotification(&notification{serial: serial}))
+		envoy.WithNotification(&notification{serial: serial, logger: slog.Default()}))
 
 	if err != nil {
 		slog.Error("Quitting because of error opening envoy", "error", err)
@@ -153,22 +156,23 @@ func main() {
 }
 
 type notification struct {
+	logger      *slog.Logger
 	lastSession string
 	serial      string
 	uses        float64
 }
 
 func (n *notification) JWTRefreshed(_ string) {
-	slog.Info("JWT refreshed")
+	n.logger.Debug("JWT refreshed")
 	jwtRefreshes.WithLabelValues(n.serial).Inc()
 }
 
 func (n *notification) JWTError(err error) {
-	slog.Error("JWT error", err)
+	n.logger.Error("JWT error", err)
 }
 
 func (n *notification) SessionRefreshed(s string) {
-	slog.Info("Session refreshed", "session", s)
+	n.logger.Debug("Session refreshed", "session", s)
 	sessionRefreshes.WithLabelValues(n.serial).Inc()
 }
 
@@ -179,9 +183,9 @@ func (n *notification) SessionUsed(s string) {
 	}
 	n.uses = n.uses + 1
 	sessionUses.WithLabelValues(n.serial).Set(n.uses)
-	slog.Info("Session used", "session", s)
+	n.logger.Debug("Session used", "session", s)
 }
 
 func (n *notification) SessionError(err error) {
-	slog.Error("session error", err)
+	n.logger.Error("session error", err)
 }
