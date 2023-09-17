@@ -148,7 +148,8 @@ func main() {
 	slog.Info("Start listening", slog.String("address", listenAddr))
 	http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 
-	_ = http.ListenAndServe(listenAddr, nil)
+	err = http.ListenAndServe(listenAddr, nil)
+	slog.Info("Program exit", "result", err)
 }
 
 type notification struct {
