@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -58,10 +59,20 @@ func init() {
 func main() {
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("envoy")
+	viper.SetConfigName("envoy")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("/etc/envoy/")
 	viper.SetDefault("address", "https://envoy.local")
 	viper.SetDefault("listen", "0.0.0.0:8899")
 	viper.SetDefault("debug", false)
 	viper.SetDefault("refresh", 20)
+
+	if err := viper.ReadInConfig(); err != nil {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if errors.As(err, &configFileNotFoundError) {
+			fmt.Printf("Config file not found.\n")
+		}
+	}
 
 	username := viper.GetString("username")
 	password := viper.GetString("password")
@@ -78,7 +89,7 @@ func main() {
 		discover, err := envoy.Discover()
 		if err != nil {
 			fmt.Printf("Missing serial and failed discovery: %s\n", err)
-			os.Exit(1)
+			os.Exit(2)
 		}
 		fmt.Printf("Using discovered envoy at %s with serial %s\n", discover.IPV4, discover.Serial)
 		serial = discover.Serial
@@ -93,7 +104,7 @@ func main() {
 
 	if err != nil {
 		fmt.Printf("Quitting because of error opening envoy: %v\n", err)
-		os.Exit(1)
+		os.Exit(3)
 	}
 
 	go func() {
