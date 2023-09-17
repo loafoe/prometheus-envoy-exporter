@@ -11,7 +11,7 @@ import (
 
 	"github.com/loafoe/go-envoy"
 
-	"golang.org/x/exp/slog"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -57,7 +57,6 @@ func init() {
 }
 
 func main() {
-	viper.AutomaticEnv()
 	viper.SetEnvPrefix("envoy")
 	viper.SetConfigName("envoy")
 	viper.SetConfigType("yaml")
@@ -70,9 +69,16 @@ func main() {
 	if err := viper.ReadInConfig(); err != nil {
 		var configFileNotFoundError viper.ConfigFileNotFoundError
 		if errors.As(err, &configFileNotFoundError) {
-			fmt.Printf("Config file not found.\n")
+			slog.Info("Config file not found")
 		}
 	}
+	if viper.GetBool("debug") {
+		programLevel := new(slog.LevelVar)
+		h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
+		slog.SetDefault(slog.New(h))
+		programLevel.Set(slog.LevelDebug)
+	}
+	slog.Debug("AllSettings", viper.AllSettings())
 
 	username := viper.GetString("username")
 	password := viper.GetString("password")
@@ -83,15 +89,13 @@ func main() {
 	debug := viper.GetBool("debug")
 	refresh := viper.GetInt("refresh")
 
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout)))
-
 	if serial == "" { // Discovery via mDNS
 		discover, err := envoy.Discover()
 		if err != nil {
-			fmt.Printf("Missing serial and failed discovery: %s\n", err)
+			slog.Error("Missing serial and failed discovery", "error", err)
 			os.Exit(2)
 		}
-		fmt.Printf("Using discovered envoy at %s with serial %s\n", discover.IPV4, discover.Serial)
+		slog.Info("Using discovered envoy", "envoy_ip", discover.IPV4, "serial", discover.Serial)
 		serial = discover.Serial
 		address = fmt.Sprintf("https://%s", discover.IPV4)
 	}
@@ -103,7 +107,7 @@ func main() {
 		envoy.WithNotification(&notification{serial: serial}))
 
 	if err != nil {
-		fmt.Printf("Quitting because of error opening envoy: %v\n", err)
+		slog.Error("Quitting because of error opening envoy", "error", err)
 		os.Exit(3)
 	}
 
