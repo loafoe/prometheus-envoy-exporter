@@ -1,12 +1,11 @@
 module github.com/loafoe/prometheus-envoy-exporter
 
-go 1.19
+go 1.22
 
 require (
 	github.com/loafoe/go-envoy v0.0.15
 	github.com/prometheus/client_golang v1.16.0
 	github.com/spf13/viper v1.16.0
-	golang.org/x/exp v0.0.0-20221227203929-1b447090c38c
 )
 
 require (
