@@ -83,24 +83,36 @@ envoy_session_refreshes{gateway="122220000001"} 1
 envoy_session_uses{gateway="122220000001"} 102
 ```
 
-### Ship to prometheus
+### Ship to prometheus / mimir
 
-You can use something like Grafana-agent to ship data to a remote write endpoint. Example:
+You can use something like Grafana Alloy to ship data to a remote write endpoint. Example:
 
 ```yml
-metrics:
-  configs:
-    - name: default
-      scrape_configs:
-        - job_name: 'envoy_exporter'
-          scrape_interval: 30s
-          static_configs:
-            - targets: ['localhost:8899']
-      remote_write:
-        - url: https://prometheus.example.com/api/v1/write
-          basic_auth:
-            username: scraper
-            password: S0m3pAssW0rdH3Re
+prometheus.scrape "metrics_default_envoy_exporter" {
+	targets = [{
+		__address__ = "localhost:8899",
+	}]
+	forward_to      = [prometheus.remote_write.metrics_default.receiver]
+	job_name        = "envoy_exporter"
+	scrape_interval = "30s"
+}
+
+prometheus.remote_write "metrics_default" {
+	external_labels = {
+		environment = "home",
+	}
+
+	endpoint {
+		name = "mimir"
+		url  = "https://some.cloud.com/api/prom/push"
+
+		basic_auth {
+			username = "some_login"
+			password = "some_password"
+		}
+
+	}
+}
 ```
 
 ## License
