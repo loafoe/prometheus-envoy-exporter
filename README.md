@@ -87,7 +87,7 @@ envoy_session_uses{gateway="122220000001"} 102
 
 You can use something like Grafana Alloy to ship data to a remote write endpoint. Example:
 
-```yml
+```alloy
 prometheus.scrape "metrics_default_envoy_exporter" {
 	targets = [{
 		__address__ = "localhost:8899",
