@@ -128,7 +128,7 @@ func main() {
 
 			prod, _, err := e.Production()
 			if err != nil {
-				slog.Error("error", err)
+				slog.Error("error getting production data", "error", err)
 			}
 			if prod != nil && len(prod.Production) > 0 {
 				productionWattsNow.WithLabelValues(serial).Set(prod.Production[0].WNow)
@@ -137,7 +137,7 @@ func main() {
 
 			inverters, _, err := e.Inverters()
 			if err != nil {
-				slog.Error("error", err)
+				slog.Error("error getting inverters data", "error", err)
 			}
 			if inverters != nil {
 				for _, inverter := range *inverters {
@@ -168,7 +168,7 @@ func (n *notification) JWTRefreshed(_ string) {
 }
 
 func (n *notification) JWTError(err error) {
-	n.logger.Error("JWT error", err)
+	n.logger.Error("JWT error", "error", err)
 }
 
 func (n *notification) SessionRefreshed(s string) {
@@ -187,5 +187,5 @@ func (n *notification) SessionUsed(s string) {
 }
 
 func (n *notification) SessionError(err error) {
-	n.logger.Error("session error", err)
+	n.logger.Error("session error", "error", err)
 }
