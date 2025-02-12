@@ -100,7 +100,9 @@ func main() {
 		}
 		slog.Info("Using discovered envoy", "envoy_ip", discover.IPV4, "serial", discover.Serial)
 		serial = discover.Serial
-		address = fmt.Sprintf("https://%s", discover.IPV4)
+		if discover.IPV4 != "<nil>" {
+			address = fmt.Sprintf("https://%s", discover.IPV4)
+		}
 	}
 
 	e, err := envoy.NewClient(username, password, serial,
@@ -116,17 +118,15 @@ func main() {
 
 	go func() {
 		for {
-			cr, resp, err := e.CommCheck()
+			cr, err := e.CommCheck()
 			if err != nil {
-				if resp != nil && resp.StatusCode == http.StatusUnauthorized {
-					e.InvalidateSession() // Token expired?
-				}
+				e.InvalidateSession() // Token expired?
 			}
 			if cr != nil {
 				slog.Info("Found devices", "count", len(*cr))
 			}
 
-			prod, _, err := e.Production()
+			prod, err := e.Production()
 			if err != nil {
 				slog.Error("error getting production data", "error", err)
 			}
@@ -135,7 +135,7 @@ func main() {
 				productionWattHourLifetime.WithLabelValues(serial).Set(prod.Production[0].WhLifetime)
 			}
 
-			inverters, _, err := e.Inverters()
+			inverters, err := e.Inverters()
 			if err != nil {
 				slog.Error("error getting inverters data", "error", err)
 			}
