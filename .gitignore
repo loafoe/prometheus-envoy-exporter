@@ -3,3 +3,5 @@
 /dist
 /vendor
 /cover.out
+prometheus-envoy-exporter
+.claude/

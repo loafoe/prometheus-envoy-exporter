@@ -92,12 +92,15 @@ func main() {
 	debug := viper.GetBool("debug")
 	refresh := viper.GetInt("refresh")
 
-	if serial == "" { // Discovery via mDNS
-		discover, err := envoy.Discover()
-		if err != nil {
-			slog.Error("Missing serial and failed discovery", "error", err)
+	// Discovery via mDNS - overrides config when successful
+	discover, err := envoy.Discover()
+	if err != nil {
+		if serial == "" {
+			slog.Error("No serial configured and discovery failed", "error", err)
 			os.Exit(2)
 		}
+		slog.Warn("Discovery failed, using configured values", "error", err)
+	} else {
 		slog.Info("Using discovered envoy", "envoy_ip", discover.IPV4, "serial", discover.Serial)
 		serial = discover.Serial
 		if discover.IPV4 != "<nil>" {
