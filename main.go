@@ -65,6 +65,7 @@ func main() {
 	viper.SetDefault("listen", "0.0.0.0:8899")
 	viper.SetDefault("debug", false)
 	viper.SetDefault("refresh", 20)
+	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
 		var configFileNotFoundError viper.ConfigFileNotFoundError
