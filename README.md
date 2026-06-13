@@ -28,6 +28,18 @@ go install github.com/loafoe/prometheus-envoy-exporter@latest
 
 ## Usage
 
+The exporter can be configured using environment variables, a YAML configuration file, or command-line arguments.
+
+### CLI Options
+
+```shell
+prometheus-envoy-exporter -h
+```
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-config <path>` | Path to configuration file | |
+
 ### Configure environment
 
 | Environment      | Description                              | Required | Default               |
@@ -39,16 +51,39 @@ go install github.com/loafoe/prometheus-envoy-exporter@latest
 | `ENVOY_ADDRESS`  | Address of the Envoy-S gateway           | N        | `https://envoy.local` |
 | `ENVOY_JWT`      | Long lived JWT token                     | N        |                       |
 | `ENVOY_REFRESH`  | Seconds to wait between refreshing data  | N        | `20`                  |
+| `ENVOY_DEBUG`    | Enable debug logging                     | N        | `false`               |
 
 > When you set only a JWT be sure to refresh it at least once a year, otherwise set your Enlighten Cloud login credentials
 
 > When not setting a serial the exporter will attempt to use `mDNS` to discover the Gateway on your local LAN
+
+### Configure via file
+
+By default, the exporter looks for a configuration file named `envoy.yaml` in the following locations:
+1. `/etc/envoy/`
+2. Current working directory (`.`)
+
+You can also specify a custom configuration path using the `-config` flag.
+
+Example `envoy.yaml`:
+
+```yaml
+username: "your-enlighten-username"
+password: "your-enlighten-password"
+serial: "122220000001"
+listen: "0.0.0.0:8899"
+address: "https://envoy.local"
+jwt: "optional-long-lived-jwt-token"
+refresh: 20
+debug: false
+```
 
 ### Run exporter
 
 ```shell
 prometheus-envoy-exporter
 ```
+
 
 ### Output
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -57,27 +58,63 @@ func init() {
 }
 
 func main() {
+	var configPath string
+	flag.StringVar(&configPath, "config", "", "Path to configuration file")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s [options]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Options:\n")
+		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\nEnvironment variables:\n")
+		fmt.Fprintf(os.Stderr, "  ENVOY_USERNAME   Username for Enlighten cloud\n")
+		fmt.Fprintf(os.Stderr, "  ENVOY_PASSWORD   Password for Enlighten cloud\n")
+		fmt.Fprintf(os.Stderr, "  ENVOY_SERIAL     Serial number of the gateway on your LAN\n")
+		fmt.Fprintf(os.Stderr, "  ENVOY_LISTEN     Listen port of the exporter (default \"0.0.0.0:8899\")\n")
+		fmt.Fprintf(os.Stderr, "  ENVOY_ADDRESS    Address of the Envoy-S gateway (default \"https://envoy.local\")\n")
+		fmt.Fprintf(os.Stderr, "  ENVOY_JWT        Long lived JWT token\n")
+		fmt.Fprintf(os.Stderr, "  ENVOY_REFRESH    Seconds to wait between refreshing data (default 20)\n")
+		fmt.Fprintf(os.Stderr, "  ENVOY_DEBUG      Enable debug logging (default false)\n")
+	}
+	flag.Parse()
+
 	viper.SetEnvPrefix("envoy")
-	viper.SetConfigName("envoy")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("/etc/envoy/")
+	viper.AutomaticEnv()
+
 	viper.SetDefault("address", "https://envoy.local")
 	viper.SetDefault("listen", "0.0.0.0:8899")
 	viper.SetDefault("debug", false)
 	viper.SetDefault("refresh", 20)
 	viper.AutomaticEnv()
 
-	if err := viper.ReadInConfig(); err != nil {
-		var configFileNotFoundError viper.ConfigFileNotFoundError
-		if errors.As(err, &configFileNotFoundError) {
-			slog.Info("Config file not found")
-		}
+	if configPath != "" {
+		viper.SetConfigFile(configPath)
+	} else {
+		viper.SetConfigName("envoy")
+		viper.SetConfigType("yaml")
+		viper.AddConfigPath("/etc/envoy/")
+		viper.AddConfigPath(".")
 	}
 
-	// Logger
+	// Logger setup early so we can log config errors using slog
 	programLevel := new(slog.LevelVar)
 	h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
 	slog.SetDefault(slog.New(h))
+
+	if err := viper.ReadInConfig(); err != nil {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if errors.As(err, &configFileNotFoundError) {
+			if configPath != "" {
+				slog.Error("Specified config file not found", "path", configPath, "error", err)
+				os.Exit(1)
+			}
+			slog.Debug("Config file not found", "error", err)
+		} else {
+			slog.Error("Error reading config file", "error", err)
+			os.Exit(1)
+		}
+	} else {
+		slog.Info("Using config file", "path", viper.ConfigFileUsed())
+	}
 
 	if viper.GetBool("debug") {
 		programLevel.Set(slog.LevelDebug)
@@ -92,6 +129,12 @@ func main() {
 	jwt := viper.GetString("jwt")
 	debug := viper.GetBool("debug")
 	refresh := viper.GetInt("refresh")
+
+	// Validate credentials early
+	if jwt == "" && (username == "" || password == "") {
+		slog.Error("Quitting because credentials are incomplete. Please set either ENVOY_JWT or both ENVOY_USERNAME and ENVOY_PASSWORD (via environment variables, command-line arguments, or config file)")
+		os.Exit(3)
+	}
 
 	// Discovery via mDNS - overrides config when successful
 	discover, err := envoy.Discover()
