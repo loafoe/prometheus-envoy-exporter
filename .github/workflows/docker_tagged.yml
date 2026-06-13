@@ -9,7 +9,9 @@ jobs:
   main:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       packages: write
+      id-token: write
     steps:
       -
         name: Set up QEMU
@@ -17,6 +19,8 @@ jobs:
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.8.0
       - name: Log in to the Github Container registry
         uses: docker/login-action@v4
         with:
@@ -35,8 +39,6 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository }}
-      - name: Inject tag into Dockerfile
-        run: sed -i "s|{{TAG}}|${{ steps.vars.outputs.tag }}|g" Dockerfile
       -
         name: Build and push
         id: docker_build
@@ -49,6 +51,15 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
+          sbom: true
+          provenance: true
+      - name: Sign the container image
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}
+          DIGEST: ${{ steps.docker_build.outputs.digest }}
+        run: |
+          IMAGE_LOWER=$(echo "${IMAGE}" | tr '[:upper:]' '[:lower:]')
+          cosign sign --yes --recursive "${IMAGE_LOWER}@${DIGEST}"
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}

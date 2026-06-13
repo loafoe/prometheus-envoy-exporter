@@ -150,6 +150,44 @@ prometheus.remote_write "metrics_default" {
 }
 ```
 
+## Image Verification and SBOM
+
+All container images published to the GitHub Container Registry are built with Software Bill of Materials (SBOM) and signed using [Cosign](https://github.com/sigstore/cosign) via keyless signing (using GitHub Actions' OIDC identity).
+
+### Verifying the Image Signature
+
+You can verify the signature of a published image using `cosign`:
+
+```shell
+cosign verify \
+  --certificate-identity-regexp "https://github.com/loafoe/prometheus-envoy-exporter/.github/workflows/docker.*.yml@.*" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  ghcr.io/loafoe/prometheus-envoy-exporter:<tag>
+```
+
+### Verifying and Inspecting the SBOM
+
+The SBOM is generated in SPDX format and attached to the container image manifest as an OCI attestation.
+
+To verify the SBOM attestation:
+
+```shell
+cosign verify-attestation \
+  --type spdx \
+  --certificate-identity-regexp "https://github.com/loafoe/prometheus-envoy-exporter/.github/workflows/docker.*.yml@.*" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  ghcr.io/loafoe/prometheus-envoy-exporter:<tag>
+```
+
+To download and extract the SBOM content:
+
+```shell
+cosign download attestation \
+  --platform linux/amd64 \
+  ghcr.io/loafoe/prometheus-envoy-exporter:<tag> | jq -r '.payload' | base64 -d | jq '.predicate'
+```
+
 ## License
 
 License is MIT
+
