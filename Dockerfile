@@ -15,4 +15,4 @@ RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
 WORKDIR /app
 COPY --from=builder /build/prometheus-envoy-exporter /app
 EXPOSE 8899
-CMD ["/app/prometheus-envoy-exporter", "-listen", "0.0.0.0:8899"]
+CMD ["/app/prometheus-envoy-exporter"]
