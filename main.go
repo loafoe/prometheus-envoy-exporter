@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -144,12 +145,23 @@ func main() {
 			os.Exit(2)
 		}
 		slog.Warn("Discovery failed, using configured values", "error", err)
-	} else {
+	} else if discover != nil {
 		slog.Info("Using discovered envoy", "envoy_ip", discover.IPV4, "serial", discover.Serial)
 		serial = discover.Serial
-		if discover.IPV4 != "<nil>" {
+		if discover.IPV4 != "" && discover.IPV4 != "<nil>" {
 			address = fmt.Sprintf("https://%s", discover.IPV4)
+		} else if discover.IPV6 != "" && discover.IPV6 != "<nil>" {
+			address = fmt.Sprintf("https://[%s]", discover.IPV6)
+		} else {
+			slog.Warn("Discovery returned no valid IP address, falling back to configured address", "address", address)
 		}
+	}
+
+	// Validate gateway address is a valid URL with a scheme and host
+	u, err := url.Parse(address)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		slog.Error("Quitting because gateway address is invalid (must be a valid URL with scheme and host). Please check ENVOY_ADDRESS or discovery settings", "address", address)
+		os.Exit(3)
 	}
 
 	e, err := envoy.NewClient(username, password, serial,
