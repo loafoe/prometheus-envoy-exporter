@@ -3,7 +3,7 @@ module github.com/loafoe/prometheus-envoy-exporter
 go 1.25.0
 
 require (
-	github.com/loafoe/go-envoy v0.3.0
+	github.com/loafoe/go-envoy v0.3.2
 	github.com/prometheus/client_golang v1.23.2
 	github.com/spf13/viper v1.21.0
 )
